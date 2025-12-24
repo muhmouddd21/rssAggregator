@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,7 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/muhmouddd21/rssAggregator/internal/db"
 )
+
+type apiConfig struct {
+	DB *db.Queries
+}
 
 func main() {
 	err := godotenv.Load()
@@ -17,6 +24,23 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	portString := os.Getenv("PORT")
+	if portString == "" {
+		log.Fatal("portString is not found in env")
+	}
+	dburl := os.Getenv("DB_URL")
+
+	if dburl == "" {
+		log.Fatal("dburl is not found in env")
+	}
+
+	conn, err := sql.Open("postgres", dburl)
+	if err != nil {
+		log.Fatal("can not connect to DB", err)
+	}
+
+	apicfg := apiConfig{
+		DB: db.New(conn),
+	}
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
@@ -31,6 +55,7 @@ func main() {
 
 	v1Router.Get("/healthz", handle_health)
 	v1Router.Get("/err", handle_err)
+	v1Router.Post("/create", apicfg.handlerCreateUser)
 	router.Mount("/v1", v1Router)
 	srv := &http.Server{
 		Addr:    ":" + portString,
