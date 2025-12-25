@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/muhmouddd21/rssAggregator/internal/db"
 )
 
 func (apicfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -14,9 +18,17 @@ func (apicfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 	params := paramters{}
 	err := decode.Decode(&params)
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("error parsing json", err))
+		responseWithError(w, 400, fmt.Sprintf("error parsing json %s", err))
 	}
-	apicfg.DB.CreateUser()
+	user, err := apicfg.DB.CreateUser(r.Context(), db.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      params.Name,
+	})
+	if err != nil {
+		responseWithError(w, 400, fmt.Sprintf("Coudn't create user %s", err))
+	}
 
-	responseWithJSON(w, 200, struct{}{})
+	responseWithJSON(w, 200, userDatabaseToUser(user))
 }
