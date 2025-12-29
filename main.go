@@ -56,8 +56,11 @@ func main() {
 	v1Router.Get("/healthz", handle_health)
 	v1Router.Get("/err", handle_err)
 	v1Router.Post("/users", apicfg.handlerCreateUser)
-	v1Router.Get("/users", apicfg.authedUser(apicfg.handleGetUser))
+	v1Router.Get("/users", withLogging(apicfg.authedUser(apicfg.handleGetUser)))
 	v1Router.Post("/feeds", apicfg.authedUser(apicfg.handlerCreateFeed))
+	v1Router.Post("/feeds_follows", apicfg.authedUser(apicfg.handlerFollowFeed))
+	v1Router.Get("/feeds_follows", withLogging(apicfg.authedUser(apicfg.handlerGetFollowsfeed)))
+	v1Router.Delete("/feeds_follows/{feedfollowid}", withLogging(apicfg.authedUser(apicfg.handlerDeleteFollowsfeed)))
 	router.Mount("/v1", v1Router)
 	srv := &http.Server{
 		Addr:    ":" + portString,
